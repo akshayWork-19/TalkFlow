@@ -4,38 +4,40 @@ import User from '../models/user.model.js';
 const authenticate = async (req, res, next) => {
   try {
     const authHeader = req.headers['authorization'];
-    if(!authHeader){
+    if (!authHeader) {
       return res.status(400).json({
-        success:false,
-        message:"Valid Token required!"
+        success: false,
+        message: "Valid Token required!"
       });
     }
 
+    // Bearer token
+
     const token = authHeader && authHeader.split(' ')[1];
-    if(!token){
-       return res.status(400).json({
-        success:false,
-        message:"Valid Token required!"
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid Token required!"
       });
     }
 
 
     let decodedToken;
     try {
-      decodedToken = jwt.verify(token,process.env.JWT_SECRET);
+      decodedToken = jwt.verify(token, process.env.JWT_SECRET);
     } catch (error) {
       return res.status(500).json({
-        success:false,
-        message:"In verifying jwt token!"
+        success: false,
+        message: "In verifying jwt token!"
       });
     }
 
     const user = await User.findById(decodedToken.userId)
-    .select('-password');
-    if(!user){
-       return res.status(400).json({
-        success:false,
-        message:"Token valid but user no longer exists!!"
+      .select('-password');
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Token valid but user no longer exists!!"
       });
     }
 

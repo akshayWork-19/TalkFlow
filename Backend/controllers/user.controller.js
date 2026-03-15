@@ -12,6 +12,7 @@ const generateWebToken = (userId) => {
 }
 
 // #region reg.Controller
+console.log("akshay");
 
 const register = async (req, res) => {
   const { username, email, password, role } = req.body;
