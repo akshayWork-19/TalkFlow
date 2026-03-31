@@ -9,7 +9,7 @@ const postSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-      maxlength: 20
+      maxlength: 100
     },
     content: {
       type: String,
@@ -25,7 +25,11 @@ const postSchema = new mongoose.Schema(
       type: [String],
       default: []
     },
-    votesCount: {
+    upVotesCount: {
+      type: Number,
+      default: 0,
+    },
+    downVotesCount: {
       type: Number,
       default: 0,
     },

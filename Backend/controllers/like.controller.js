@@ -32,9 +32,12 @@ const toggleVote = async (req, res) => {
     if (exisitingVote.voteType === voteType) {
       await Vote.deleteOne({ _id: exisitingVote._id });
       await updatePostVoteCount(postId);
+      const updatedPost = await Post.findById(postId);
       return res.status(200).json({
         success: true,
-        message: `${voteType === 'up' ? 'Upvote' : 'Downvote'} removed`,
+        message: `vote updated!`,
+        upVotes: updatedPost.upVotesCount,
+        downVotes: updatedPost.downVotesCount,
         action: 'removed',
         voteType: null,
         hasVoted: false
@@ -43,9 +46,12 @@ const toggleVote = async (req, res) => {
       exisitingVote.voteType = voteType;
       await exisitingVote.save();
       await updatePostVoteCount(postId);
+      const updatedPost = await Post.findById(postId);
       return res.status(200).json({
         success: true,
-        message: `Vote changed to ${voteType === 'up' ? 'upvote' : 'downvote'}`,
+        message: `Vote updated!`,
+        upVotes: updatedPost.upVotesCount,
+        downVotes: updatedPost.downVotesCount,
         action: 'updated',
         voteType: voteType,
         hasVoted: true
@@ -59,11 +65,13 @@ const toggleVote = async (req, res) => {
     });
 
     await updatePostVoteCount(postId);
-
+    const updatedPost = await Post.findById(postId);
     return res.status(201).json({
       success: true,
-      message: `${voteType === 'up' ? 'Upvoted' : 'Downvoted'} successfully`,
+      message: `vote updated!`,
       action: 'created',
+      upVotes: updatedPost.upVotesCount,
+      downVotes: updatedPost.downVotesCount,
       voteType: voteType,
       hasVoted: true,
       voteId: newVote._id
@@ -191,14 +199,16 @@ const userHistory = async (req, res) => {
 
 
 async function updatePostVoteCount(postId) {
-    const upVotes = await Vote.countDocuments({ post: postId, voteType: "up" });
-    const downVotes = await Vote.countDocuments({ post: postId, voteType: "down" });
+  const upVotes = await Vote.countDocuments({ post: postId, voteType: "up" });
+  const downVotes = await Vote.countDocuments({ post: postId, voteType: "down" });
 
-    await Post.findByIdAndUpdate(postId, {
-      votesCount: upVotes - downVotes
-    });
+  await Post.findByIdAndUpdate(postId, {
+    upVotesCount: upVotes,
+    downVotesCount: downVotes,
+    votesCount: upVotes - downVotes
+  });
 
-    // console.log(`Updated Post ${postId} has vote Count :${upVotes - downVotes}`);
+  // console.log(`Updated Post ${postId} has vote Count :${upVotes - downVotes}`);
 }
 export {
   // #region helperFunction

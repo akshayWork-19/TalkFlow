@@ -1,21 +1,35 @@
-import { useState } from "react"
-import { Search, Bell, User, Menu } from "lucide-react"
-import { Link, useLocation } from "react-router-dom"
-import NotificationPopover from "./NotificationPopover"
+import { useState } from "react";
+import { Search, Bell, User, Menu } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import NotificationPopover from "./NotificationPopover";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Navbar() {
-  const [showNotifications, setShowNotifications] = useState(false)
-  const location = useLocation()
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user, logout } = useAuth();
+
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/?search=${encodeURIComponent(searchQuery)}`)
+    } else {
+      navigate('/');
+    }
+  }
 
   const isActive = (path) => location.pathname === path
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center">
+      <div className="container flex h-14 items-center px-4 md:px-6">
         <div className="mr-4 hidden md:flex">
           <Link className="mr-6 flex items-center space-x-2" to="/">
             <span className="hidden font-bold sm:inline-block">
-              ForumApp
+              TalkFlow
             </span>
           </Link>
           <nav className="flex items-center space-x-6 text-sm font-medium">
@@ -30,30 +44,46 @@ export default function Navbar() {
         </button>
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
           <div className="w-full flex-1 md:w-auto md:flex-none">
-            <div className="relative">
+            <form className="relative" onSubmit={handleSearch}>
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <input
                 type="search"
                 placeholder="Search posts..."
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-9 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:w-[300px] lg:w-[400px]"
               />
-            </div>
+            </form>
           </div>
           <nav className="flex items-center space-x-2 relative">
-            <button 
+            <button
               onClick={() => setShowNotifications(!showNotifications)}
-              className={`inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-10 w-10 ${showNotifications ? 'bg-accent text-accent-foreground' : ''}`}
+              className={`inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-10 w-10 relative ${showNotifications ? 'bg-accent text-accent-foreground' : ''}`}
             >
               <Bell className="h-5 w-5" />
               <span className="sr-only">Notifications</span>
               <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary border-2 border-background"></div>
             </button>
             {showNotifications && <NotificationPopover />}
-            
-            <Link to="/profile" className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-10 w-10">
-              <User className="h-5 w-5" />
-              <span className="sr-only">User Profile</span>
-            </Link>
+
+            {user ? (
+              <div className="flex items-center gap-2">
+                <Link to="/profile" className="flex items-center gap-2 hover:bg-accent rounded-full px-3 py-1.5 transition-colors text-sm">
+                  <div className="h-7 w-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
+                    {user.username?.[0]?.toUpperCase()}
+                  </div>
+                  <span className="hidden md:block font-medium">
+                    {user.username}
+                  </span>
+                </Link>
+                <button onClick={logout} className="text-xs text-muted-foreground hover:text-destructive transition-colors">
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <Link to="/login" className="text-sm font-medium hover:text-primary transition-colors">
+                Login
+              </Link>
+            )}
           </nav>
         </div>
       </div>

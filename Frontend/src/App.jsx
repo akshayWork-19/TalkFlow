@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
+import { BrowserRouter as Router, Routes, Route, useSearchParams } from "react-router-dom"
 import MainLayout from "./layouts/MainLayout"
 import PostCard from "./components/custom/PostCard"
 import Categories from "./pages/Categories"
@@ -8,57 +8,68 @@ import UserProfile from "./pages/UserProfile"
 import Settings from "./pages/Settings"
 import Support from "./pages/Support"
 import Trending from "./pages/Trending"
-
-const MOCK_POSTS = [
-  {
-    id: 1,
-    author: "Alex Rivers",
-    timeAgo: "2 hours ago",
-    category: "Programming",
-    title: "How to master Shadcn UI in React projects?",
-    content: "I've been working with Tailwind CSS for a while, but Shadcn UI takes it to a whole new level. The way it provides accessible, reusable components without being a 'weight' on your bundle size is incredible. What are your tips for structuring a large project with Shadcn?",
-    likes: 42,
-    comments: 12
-  },
-  {
-    id: 2,
-    author: "Sarah Chen",
-    timeAgo: "5 hours ago",
-    category: "Design",
-    title: "The importance of white space in modern web apps",
-    content: "White space is often overlooked but it's one of the most powerful tools in a designer's arsenal. It helps guide the user's eye and reduces cognitive load. Here's a breakdown of how we used white space in our latest redesign...",
-    likes: 85,
-    comments: 24
-  },
-  {
-    id: 3,
-    author: "Mike Thompson",
-    timeAgo: "1 day ago",
-    category: "Productivity",
-    title: "5 Habits of highly effective developers",
-    content: "After a decade in the industry, I've noticed certain patterns among the most productive engineers I've worked with. It's not just about typing fast; it's about focused work, clear communication, and constant learning.",
-    likes: 156,
-    comments: 48
-  }
-]
+import Login from "./pages/Login"
+import api from "./lib/axios"
+import { useEffect, useState } from "react"
+import Register from "./pages/Register"
+import CreatePostModal from "./components/custom/CreatePostModal"
+import ProtectedRoute from "./components/custom/ProtectedRoute";
 
 function Home() {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isModelOpen, setIsModelOpen] = useState(false);
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get('search') || '';
+
+
+  const loadPosts = async (showLoading = false) => {
+    try {
+      // setLoading(true);
+      if (showLoading) setLoading(true);
+      const url = searchQuery ? `/post?search=${encodeURIComponent(searchQuery)}` : '/post';
+      const response = await api.get(url);
+      console.log(response.data);
+      setPosts(response.data.data || response.data);
+    } catch (error) {
+      setError("Failed to load posts. Make sure you are logged in!")
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadPosts(true);
+  }, [searchQuery]);
+
+  if (loading) return <div className="text-center py-10">Loading posts...</div>
+  if (error) return <div className="text-center py-10 text-destructive">Error </div>
   return (
     <div className="mx-auto max-w-4xl">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Recent Posts</h1>
-          <p className="text-muted-foreground">Stay updated with the latest discussions in the community.</p>
+          <h1 className="text-3xl font-bold tracking-tight">{searchQuery ? `Results for ${searchQuery}` : "Recent Posts"}</h1>
+          <p className="text-muted-foreground">{searchQuery ? "Showing posts matching your search." : "Stay updated with the latest discussions."}</p>
         </div>
-        <button className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-10 px-6 py-2">
+        <button className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-10 px-6 py-2" onClick={() => setIsModelOpen(true)}>
           New Post
         </button>
       </div>
-      
+
+      <CreatePostModal isOpen={isModelOpen} onClose={() => setIsModelOpen(false)} onPostCreated={() => loadPosts(false)} />
+
+
       <div className="grid gap-6">
-        {MOCK_POSTS.map(post => (
-          <PostCard key={post.id} post={post} />
+        {posts.map(post => (
+          <PostCard key={post._id} post={post} />
         ))}
+        {/* {posts.length > 0 ? (posts.map(post => (
+          <PostCard key={post.id} post={post} />
+        ))) : (
+          <p className="text-center text-muted-foreground py-10">No posts found.</p>
+        )}: */}
       </div>
     </div>
   )
@@ -74,9 +85,11 @@ function App() {
           <Route path="/categories/:categorySlug" element={<CategoryDetail />} />
           <Route path="/popular" element={<Popular />} />
           <Route path="/trending" element={<Trending />} />
-          <Route path="/profile" element={<UserProfile />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/support" element={<Support />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
         </Routes>
       </MainLayout>
     </Router>

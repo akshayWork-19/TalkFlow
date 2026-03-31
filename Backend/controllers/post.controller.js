@@ -102,24 +102,39 @@ const deletePost = async (req, res) => {
 //#endregion
 //#region getAllPosts
 const getAllPosts = async (req, res) => {
+  res.startTime('db', 'Fetch all posts');
+
+  const { search, tag, author } = req.query;
   const userId = req.user._id;
   if (!userId) {
     throw new AuthorizationError('UserId is requred');
   }
+  const query = {};
+
+  if (search) {
+    query.$or = [
+      { title: { $regex: search, $options: 'i' } },
+      { content: { $regex: search, $options: 'i' } },
+    ]
+  }
+  if (tag) {
+    query.tags = tag;
+  }
+  if (author) {
+    query.author = author;
+  }
+
   // console.log(userId);
-  const userPosts = await Post.find({ author: userId })
+  const userPosts = await Post.find(query)
+    .populate('author', 'username email')
     .sort({ createdAt: -1 })
     .select('-__v');
 
+  res.endTime('db');
   // console.log(userPosts);
   res.status(200).json({
     success: true,
     count: userPosts.length,
-    user: {
-      id: req.user._id,
-      username: req.user.username,
-      email: req.user.email
-    },
     data: userPosts
   });
 
