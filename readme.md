@@ -17,26 +17,21 @@ A modern, high-performance discussion platform built with a **React (Vite)** fro
 ---
 
 ## 🌟 Project Overview
-TalkFlow is a fully integrated fullstack forum platform. Users can register, log in, create posts, vote on discussions, leave comments, and explore content by category or search. The architecture prioritizes security, developer experience, and UI premium feel.
+TalkFlow is a fully integrated fullstack forum platform. Users can register, log in, create posts, vote on discussions, leave comments, and explore content by category or search. The architecture prioritizes security, performance (Redis), and a real-time community feel (Socket.io).
 
 ### 🎨 Frontend Highlights
-- **Live Data Feed**: Home feed powered by real MongoDB data via REST API.
-- **JWT Auth Flow**: Login/Register pages with token persistence and auto-redirect on expiry.
-- **LeetCode-Style Voting**: Separate live Upvote/Downvote counts per post with visual feedback.
-- **Nested Comments**: Toggle-able comment section per post with real-time submission.
-- **Global Search**: Search posts by keyword directly from the Navbar (hits backend `$regex`).
-- **Category Filtering**: Click any tag on a post to see all posts in that category.
-- **Protected Routes**: Settings and Profile pages require authentication.
-- **Popular Page**: Posts sorted by net vote score.
-- **Authenticated Navbar**: Displays logged-in username with avatar initials and Logout.
+- **Modern Design System**: Built with **Tailwind CSS v4** and customized HSL tokens for a premium, high-contrast dark mode.
+- **Glassmorphism UI**: High-end aesthetics using transparent, blurred elements and smooth micro-animations.
+- **Live Data Feed**: Home feed powered by real MongoDB data with real-time upvote/downvote counts.
+- **User Reputation & Badges**: Visual display of user status (Karma) and milestone badges (Bronze, Silver, Gold).
+- **Global Search**: Unified search bar in the Navbar returning Posts, Users, and Tags instantly.
 
 ### 🛡 Backend Highlights
-- **Secure REST API**: JWT authentication, input validation, and rate limiting.
-- **Smart Post Feed**: Single `GET /post` endpoint supports `?search=` and `?tag=` filters.
-- **Voting Engine**: Three-way vote sync — `upVotesCount`, `downVotesCount`, and `votesCount` (net).
-- **Comment System**: Nested comment support with `parentComment` reference.
-- **Server Timing API**: Custom middleware adds `Server-Timing` headers for performance profiling.
-- **Performance Monitoring**: DB query durations visible in Chrome DevTools → Network → Timing.
+- **High-Performance Caching**: **Redis** integration for static data (Tags, Profiles) with an **automatic In-Memory fallback** for zero-downtime if Redis is offline.
+- **Real-time Notifications**: Hybrid persistent notification system—saved to MongoDB for history and emitted via **Socket.io** for live browser alerts.
+- **Gamification Engine**: Logic for **User Reputation** and virtual badges based on engagement quality.
+- **Security-First Architecture**: Stabilized for **Express v5** with NoSQL injection protection and custom error handling.
+- **Performance Profiling**: Custom `Server-Timing` API middleware for deep network insight.
 
 ---
 
@@ -44,34 +39,26 @@ TalkFlow is a fully integrated fullstack forum platform. Users can register, log
 
 | Layer | Technologies |
 | :--- | :--- |
-| **Frontend** | React 18, Vite, Tailwind CSS v4, Shadcn UI, Lucide Icons, React Router v6, Axios |
+| **Frontend** | React 19, Vite, Tailwind CSS v4, Lucide Icons, React Router v7, Axios |
 | **Backend** | Node.js, Express.js v5 |
+| **Caching** | Redis (with local fallback) |
+| **Real-time** | Socket.io |
 | **Database** | MongoDB (Mongoose) |
 | **Auth** | JWT (JSON Web Tokens), bcrypt |
-| **Security** | CORS, Rate Limiting, Express-mongo-sanitize |
-| **Dev Tools** | Server Timing API, dotenv |
 
 ---
 
-## 🚀 Frontend Features
+## 🚀 Key Features
 
 | Feature | Status |
 |---|---|
-| Responsive Navbar with Search | ✅ Live |
-| Login / Register Pages | ✅ Live |
-| JWT Auth Context + Token Interceptor | ✅ Live |
-| Home Feed (Real Posts from DB) | ✅ Live |
-| Create Post Modal | ✅ Live |
-| LeetCode-Style Voting (Up/Down) | ✅ Live |
-| Toggle Comments per Post | ✅ Live |
-| Global Search (hits backend) | ✅ Live |
-| Category Detail (tag filter) | ✅ Live |
-| Popular Posts (sorted by votes) | ✅ Live |
-| Protected Routes (Settings/Profile) | ✅ Live |
-| Auto-redirect on token expiry | ✅ Live |
-| Notification Popover | ✅ UI Ready |
-| User Profile Page | 🔄 In Progress |
-| Trending Page | 🔄 In Progress |
+| Responsive Navbar with Unified Search | ✅ Live |
+| Real-time Socket.io Notifications | ✅ Live |
+| Redis Caching (Tags & Profiles) | ✅ Live |
+| User Reputation & Badge System | ✅ Live |
+| Home Feed with Pagination | ✅ Live |
+| Follow / Unfollow System | ✅ Live |
+| Nested Comments & Live Voting | ✅ Live |
 
 ---
 
@@ -82,29 +69,21 @@ TalkFlow is a fully integrated fullstack forum platform. Users can register, log
 |---|---|---|
 | `POST` | `/auth/register` | Register a new user |
 | `POST` | `/auth/login` | Login and receive JWT |
+| `GET` | `/auth/me` | 🔒 Get currentUser profile |
 
-### Posts (`/forum/api/post`) — 🔒 Auth Required
+### Posts & Search (`/forum/api/post`)
 | Method | Route | Description |
 |---|---|---|
-| `GET` | `/post` | Get all posts (supports `?search=` and `?tag=`) |
-| `POST` | `/post` | Create a new post |
-| `GET` | `/post/:id` | Get a specific post |
-| `PUT` | `/post/:id` | Update a post |
-| `DELETE` | `/post/:id` | Delete a post |
+| `GET` | `/post` | Get all posts (paginated) |
+| `GET` | `/post/search/all` | **Unified Global Search** (Users, Posts, Tags) |
+| `POST` | `/post` | 🔒 Create a new post |
 
-### Votes (`/forum/api/like`) — 🔒 Auth Required
+### Notifications (`/forum/api/notifications`) — 🔒 
 | Method | Route | Description |
 |---|---|---|
-| `POST` | `/like/:id/vote` | Toggle upvote/downvote on a post |
-| `GET` | `/like/:id/votes` | Get vote counts for a post |
-| `GET` | `/like/my-votes` | Get the current user's vote history |
-
-### Comments (`/forum/api/comment`)
-| Method | Route | Description |
-|---|---|---|
-| `POST` | `/comment` | 🔒 Create a comment on a post |
-| `GET` | `/comment` | Get all comments (paginated) |
-| `GET` | `/comment/:id` | Get a specific comment |
+| `GET` | `/` | Fetch recent notifications |
+| `GET` | `/unread-count` | Get unread notification dot count |
+| `PUT` | `/:id/read` | Mark a notification as read |
 
 ---
 
@@ -166,11 +145,11 @@ TalkFlow is a fully integrated fullstack forum platform. Users can register, log
 ## 📅 Roadmap
 
 - [x] **Phase 1**: Frontend UI & Routing
-- [x] **Phase 2**: Backend-Frontend Integration (Auth, Posts, Votes, Comments, Search)
-- [ ] **Phase 3**: User Profiles & Activity Feed
-- [ ] **Phase 4**: Image Uploads (Multer/Cloudinary)
-- [ ] **Phase 5**: Real-time Notifications (WebSockets)
-- [ ] **Phase 6**: Admin Panel & Moderation Tools
+- [x] **Phase 2**: Backend Full API Integration
+- [x] **Phase 3**: User Profiles & Reputation (Live)
+- [x] **Phase 4**: Real-time Socket Notifications (Live)
+- [ ] **Phase 5**: Image/Media Uploads (Cloudinary)
+- [ ] **Phase 6**: Moderation & Reported Content Panel
 
 ---
 
@@ -179,21 +158,14 @@ TalkFlow is a fully integrated fullstack forum platform. Users can register, log
 ```
 .
 ├── Backend/
-│   ├── config/           # DB connection
-│   ├── controllers/      # post, like, comment, user logic
-│   ├── middlewares/      # auth, validation, error, serverTiming
-│   ├── models/           # Post, User, Vote, Comment schemas
-│   ├── Routes/           # API route definitions
-│   ├── utils/            # Custom error classes
-│   ├── demo.js           # Database seeding script
-│   └── server.js         # Express app entry point
+│   ├── config/           # DB & Redis connection
+│   ├── controllers/      # post, like, comment, user, follow logic
+│   ├── middlewares/      # auth, serverTiming
+│   ├── models/           # Post, User, Vote, Comment, Notification, Tag
+│   └── server.js         # Entry point
 ├── Frontend/
 │   └── src/
-│       ├── components/
-│       │   ├── custom/   # PostCard, Navbar, Sidebar, CreatePostModal, ProtectedRoute
-│       │   └── ui/       # Shadcn primitives
-│       ├── context/      # AuthContext (JWT state management)
-│       ├── lib/          # axios.js (API client + interceptors)
-│       ├── pages/        # Home, Login, Register, Categories, Popular, etc.
-│       └── layouts/      # MainLayout wrapper
+│       ├── components/   # PostCard, Navbar, Sidebar
+│       ├── lib/          # axios client
+│       └── pages/        # Home, Profile, Search
 ```
