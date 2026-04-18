@@ -16,9 +16,7 @@ export const serverTiming = (req, res, next) => {
     res.end = function (...args) {
         const totalDiff = process.hrtime(startTime);
         const totalDur = (totalDiff[0] * 1000 + totalDiff[1] / 1e6).toFixed(2);
-
         let headerStr = `total;dur=${totalDur};desc="Total Request"`;
-
         for (const key in timings) {
             if (timings[key].duration) {
                 headerStr += `, ${key};dur=${timings[key].duration};desc="${timings[key].description}"`;

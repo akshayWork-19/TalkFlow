@@ -1,8 +1,9 @@
 import express from 'express';
 import authenticate from '../middlewares/authenticate.middleware.js'
-import { createPost, deletePost, updatePost, getAllPosts, getSpecificPost } from '../controllers/post.controller.js';
+import { createPost, deletePost, updatePost, getAllPosts, getSpecificPost, globalSearch } from '../controllers/post.controller.js';
 import { createLimiter, getPostValidation, createPostValidation, updatePostValidation, deletePostValidation, paginationValidation } from '../middlewares/validation.middleware.js';
 import { catchAsync } from '../middlewares/error.middleware.js';
+
 const router = express.Router();
 router.use(authenticate);
 
@@ -13,6 +14,8 @@ router.get('/', paginationValidation, catchAsync(getAllPosts));
 router.get('/:id', getPostValidation, catchAsync(getSpecificPost));
 router.put('/:id', updatePostValidation, catchAsync(updatePost));
 router.delete('/:id', deletePostValidation, catchAsync(deletePost));
+router.get('/search/all', catchAsync(globalSearch));
+
 
 
 export default router;

@@ -1,7 +1,9 @@
 import Comment from "../models/comment.model.js";
 // import User from "../models/user.model.js";
 import Post from "../models/post.model.js";
-import { NotFoundError, AuthenticationError,AuthorizationError, ValidationError } from "../utils/customError.js";
+import { NotFoundError, AuthenticationError, AuthorizationError, ValidationError } from "../utils/customError.js";
+import { emitNotification } from "../socket.js";
+import Notification from '../models/notification.model.js';
 
 
 // #region createComment
@@ -42,6 +44,23 @@ const createComment = async (req, res) => {
   await Post.findByIdAndUpdate(post, {
     $inc: { commentsCount: 1 }
   });
+  const postAuthorId = postExists.author.toString();
+  if (postAuthorId !== author.toString()) {
+
+    const notification = await Notification.create({
+      recipient: postAuthorId,
+      sender: author,
+      type: 'comment',
+      message: `${req.user.username} commented on your post: "${postExists.title}"`,
+      relatedId: post
+    });
+
+    emitNotification(postAuthorId, {
+      id: notification._id,
+      message: notification.message,
+      createdAt: new Date()
+    })
+  }
 
   return res.status(200).json({
     success: true,
@@ -104,8 +123,58 @@ const getCommentById = async (req, res) => {
   });
 }
 
+const updateComment = async (req, res) => {
+  const { id } = req.params;
+  const { content } = req.body;
+  const userId = req.user._id;
+
+  const comment = await Comment.findById(id);
+  if (!comment) {
+    throw new NotFoundError('Comment Not Found');
+  }
+
+  if (comment.author.toString() !== userId.toString()) {
+    throw new AuthenticationError('You are not authorized to edit this comment');
+  }
+
+  comment.content = content;
+  await comment.save();
+
+  return res.status(200).json({
+    success: true,
+    message: "Comment updated!",
+    data: comment,
+  })
+
+};
+
+const deleteComment = async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user._id;
+  const userRole = req.user.role;
+
+  const comment = await Comment.findById(id);
+  if (!comment) {
+    throw new NotFoundError('Comment not found!');
+  }
+  if (comment.author.toString() !== userId.toStirng() && userRole !== 'admin') {
+    throw new AuthenticationError('Not Authorized to delete this comment!');
+  }
+
+  await Comment.findByIdAndDelete(id);
+
+  await Post.findByIdAndUpdate(comment.post, { $inc: { commentsCount: -1 } });
+
+  return res.status(200).json({
+    success: true,
+    message: "Comment Deleted!"
+  });
+};
+
 export {
   createComment,
   getAllComment,
-  getCommentById
+  getCommentById,
+  updateComment,
+  deleteComment
 }

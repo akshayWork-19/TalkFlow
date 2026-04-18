@@ -2,7 +2,8 @@ import Vote from "../models/voting.model.js";
 import Post from "../models/post.model.js";
 import User from "../models/user.model.js";
 import { AuthorizationError, ValidationError } from "../utils/customError.js";
-
+import { emitNotification } from "../socket.js";
+import Notification from "../models/notification.model.js";
 // #region toggleVote
 
 const toggleVote = async (req, res) => {
@@ -32,6 +33,9 @@ const toggleVote = async (req, res) => {
     if (exisitingVote.voteType === voteType) {
       await Vote.deleteOne({ _id: exisitingVote._id });
       await updatePostVoteCount(postId);
+
+      const points = exisitingVote.voteType === 'up' ? -10 : 2;
+      await updateUserReputation(post.author, points);
       const updatedPost = await Post.findById(postId);
       return res.status(200).json({
         success: true,
@@ -43,10 +47,31 @@ const toggleVote = async (req, res) => {
         hasVoted: false
       });
     } else {
+      const oldType = exisitingVote.voteType;
       exisitingVote.voteType = voteType;
       await exisitingVote.save();
       await updatePostVoteCount(postId);
+      const changePoints = voteType === 'up' ? 12 : -12;
+      await updateUserReputation(post.author, changePoints);
       const updatedPost = await Post.findById(postId);
+
+      if (voteType === 'up' && String(updatedPost.author) !== String(userId)) {
+
+        const notification = await Notification.create({
+          recipient: updatedPost.author,
+          sender: userId,
+          type: 'like',
+          message: `${req.user.username} changed their vote to upvote your post : "${updatedPost.title}"`,
+          relatedId: postId
+        })
+
+        emitNotification(updatedPost.author.toString(), {
+          id: notification._id,
+          message: notification.message,
+          createdAt: notification.createdAt
+        });
+      }
+
       return res.status(200).json({
         success: true,
         message: `Vote updated!`,
@@ -63,9 +88,24 @@ const toggleVote = async (req, res) => {
       post: postId,
       voteType: voteType
     });
-
     await updatePostVoteCount(postId);
+    const newPoints = voteType === 'up' ? 10 : -2;
     const updatedPost = await Post.findById(postId);
+
+    if (voteType === 'up' && String(updatedPost.author) !== String(userId)) {
+      const notification = await Notification.create({
+        recipient: updatedPost.author,
+        sender: userId,
+        type: 'like',
+        message: `${req.user.username} upvoted your post: "${updatedPost.title}"`,
+        relatedId: postId
+      })
+      emitNotification(updatedPost.author.toString(), {
+        id: notification._id,
+        message: notification.message,
+        createdAt: notification.createdAt
+      })
+    }
     return res.status(201).json({
       success: true,
       message: `vote updated!`,
@@ -101,7 +141,7 @@ const getAllVotes = async (req, res) => {
   const downVotesCount = await Vote.countDocuments({ post: postId, voteType: "down" });
 
   // console.log(upVotesCount, downVotesCount);
-  const userVote = await User.findOne({ user: userId, post: postId });
+  const userVote = await Vote.findOne({ user: userId, post: postId });
 
   res.status(200).json({
     success: true,
@@ -197,6 +237,17 @@ const userHistory = async (req, res) => {
 }
 
 
+async function updateUserReputation(userId, points) {
+  try {
+    await User.findByIdAndUpdate(userId, {
+      $inc: {
+        reputation: points
+      }
+    });
+  } catch (error) {
+    console.error('Failed to update reputation', error);
+  }
+}
 
 async function updatePostVoteCount(postId) {
   const upVotes = await Vote.countDocuments({ post: postId, voteType: "up" });

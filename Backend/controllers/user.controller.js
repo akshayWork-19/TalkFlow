@@ -2,6 +2,7 @@ import User from "../models/user.model.js";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { AuthenticationError, AuthorizationError } from "../utils/customError.js";
+import redisClient from "../config/redis.config.js";
 
 const generateWebToken = (userId) => {
   return jwt.sign(
@@ -88,14 +89,68 @@ const login = async (req, res) => {
   });
 }
 
-//#endregion
+
+const getProfile = async (req, res) => {
+  const user = await User.findById(req.user._id).select('-password');
+  return res.status(200).json({
+    success: true,
+    user
+  });
+};
+
+const updateProfile = async (req, res) => {
+  const { aboutMe, avatar } = req.body;
+  const user = await User.findByIdAndUpdate(req.user._id, {
+    aboutMe,
+    avatar
+  },
+    {
+      new: true,
+      runValidators: true
+    }
+  ).select('-password');
+
+  return res.status(200).json({
+    success: true,
+    message: "Profile updated!",
+    user
+  });
+}
+
+const getPublicProfile = async (req, res) => {
+  const { id } = req.params;
+  const cacheKey = `profile:${id}`;
+
+  const cachedUser = await redisClient.get(cacheKey);
+  if (cachedUser) {
+    return res.status(200).json({
+      success: true,
+      user: JSON.parse(cachedUser)
+    });
+  }
 
 
+  const user = await User.findById(id).select('username reputation aboutMe avatar createdAt');
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "User not found"
+    });
+  }
 
+  await redisClient.setEx(cacheKey, 1800, JSON.stringify(user));
 
+  return res.status(200).json({
+    success: true,
+    user
+  });
+}
 
 
 export {
   register,
-  login
+  login,
+  getProfile,
+  getPublicProfile,
+  updateProfile
 };

@@ -37,21 +37,6 @@ const postSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    likes: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    }],
-    comments: [{
-      user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
-      },
-      content: {
-        type: String,
-        required: true,
-      }
-    }]
   },
   { timestamps: true }
 );

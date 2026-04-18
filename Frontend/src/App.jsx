@@ -14,6 +14,7 @@ import { useEffect, useState } from "react"
 import Register from "./pages/Register"
 import CreatePostModal from "./components/custom/CreatePostModal"
 import ProtectedRoute from "./components/custom/ProtectedRoute";
+import PostDetail from "./pages/PostDetail"
 
 function Home() {
   const [posts, setPosts] = useState([]);
@@ -90,6 +91,7 @@ function App() {
           <Route path="/support" element={<Support />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/posts/:id" element={<PostDetail />} />
         </Routes>
       </MainLayout>
     </Router>

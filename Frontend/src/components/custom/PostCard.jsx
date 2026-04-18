@@ -2,6 +2,7 @@ import { ThumbsUp, MessageSquare, Share2, MoreHorizontal, ThumbsDown } from "luc
 import { useState, useEffect } from "react";
 import api from "../../lib/axios";
 import { Navigate, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 
 export default function PostCard({ post }) {
@@ -99,9 +100,11 @@ export default function PostCard({ post }) {
             <MoreHorizontal className="h-4 w-4" />
           </button>
         </div>
-        <h3 className="text-xl font-bold mb-2 hover:text-primary cursor-pointer transition-colors line-clamp-2">
-          {post.title}
-        </h3>
+        <Link to={`/posts/${post._id}`}>
+          <h2 className="text-xl font-bold leading-tight mb-3 hover:text-primary transition-colors cursor-pointer line-clamp-2">
+            {post.title}
+          </h2>
+        </Link>
         <p className="text-muted-foreground text-sm line-clamp-3 mb-4 leading-relaxed">
           {post.content}
         </p>

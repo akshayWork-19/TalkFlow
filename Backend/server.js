@@ -12,12 +12,16 @@ import userRoutes from './Routes/user.route.js';
 import postRoutes from './Routes/post.route.js';
 import likeRoutes from './Routes/like.route.js';
 import commentRoutes from './Routes/comment.routes.js';
+import followRoutes from "./Routes/follow.route.js";
+import notificationRoutes from './Routes/notification.route.js';
+import tagRoutes from "./Routes/tag.route.js";
 /*
 ERROR-HANDLING-IMPORTS!
 */
 import { errorHandler } from './middlewares/validation.middleware.js';
 import { globalErrorHandler } from './middlewares/error.middleware.js';
-
+import { createServer } from 'http';
+import { initSocket } from './socket.js';
 import cors from 'cors';
 
 
@@ -39,21 +43,15 @@ app.use(cors({
 
 }));                 // Enable CORS
 
+
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(errorHandler);           // Your input validator error handler
 
-
-// app.get('/api/openapi.json', (req, res) => {
-//   res.setHeader('Content-Type', 'application/json');
-//   res.send(specs);
-// });
-
-// // Documentation redirects
-// app.get('/documentation', (req, res) => {
-//   res.redirect('/docs');
-// });
+const httpSever = createServer(app);
+initSocket(httpSever);
 
 
 //  userRH
@@ -68,11 +66,21 @@ app.use('/forum/api/like', likeRoutes)
 // commentRH
 app.use('/forum/api/comment', commentRoutes);
 
+// followRH
+app.use('/forum/api/follow', followRoutes);
+
+//notificationRH
+app.use('/forum/api/notifications', notificationRoutes);
+
+//tagRH
+app.use('/forum/api/tags', tagRoutes);
+
+
 
 
 app.use(globalErrorHandler);
 
-app.listen(PORT, () => {
+httpSever.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
 

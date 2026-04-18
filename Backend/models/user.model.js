@@ -38,8 +38,25 @@ const userSchema = new mongoose.Schema(
       enum: ["user", "admin"],
       default: "user",
       required: true
+    },
+    reputation: {
+      type: Number,
+      default: 0
     }
   }, { timestamps: true });
+
+
+userSchema.virtual('badge').get(function () {
+  if (this.reputation >= 500) return 'Gold Legend';
+  if (this.reputation >= 200) return 'Silver Expert';
+  if (this.reputation >= 50) return 'Bronze Contributor';
+  return 'Newcomer'
+})
+
+userSchema.set('toJSON', { virtuals: true });
+userSchema.set('toObject', { virtuals: true });
+
+
 
 const User = mongoose.model('User', userSchema);
 export default User;
